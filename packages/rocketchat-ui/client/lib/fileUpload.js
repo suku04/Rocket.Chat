@@ -47,10 +47,21 @@ function formatBytes(bytes, decimals) {
 
 fileUpload = function(filesToUpload) {
 	const roomId = Session.get('openedRoom');
-	const files = [].concat(filesToUpload);
-
+	const files = [].concat(filesToUpload);	
+	
+	function getUsersCheckboxes(records){
+		var checkboxes = "";
+		for(var i = 0; i < records.length; i++){
+			checkboxes += '<input name="fileusers[]" id="fileuser'+i+'" style="display:block;margin: 0px;width: 5%;height: 16px;float: left;" type="checkbox" value="'+records[i]._id+'" />\n'+
+							'<label for="checkbox_id" style="float: left;width: 95%;text-align: left;">'+records[i].name+'</label>\n\n';
+		}
+		
+		return checkboxes;
+	}
+	
 	function consume() {
 		const file = files.pop();
+				
 		if ((file == null)) {
 			swal.close();
 			return;
@@ -76,8 +87,10 @@ fileUpload = function(filesToUpload) {
 		}
 
 		return getUploadPreview(file, function(file, preview) {
-			let text = '';
-
+			let text = '';	
+			
+			let checkboxes = getUsersCheckboxes(rusers.records);
+			
 			if (file.type === 'audio') {
 				text = `\
 <div class='upload-preview'>
@@ -123,6 +136,8 @@ fileUpload = function(filesToUpload) {
 	<input id='file-description' style='display: inherit;' value='' placeholder='${ t('Upload_file_description') }'>
 </div>`;
 			}
+			
+			text = text + '\n\n <fieldset style="padding: 10px;border-width: 2px;border-style: groove;"><legend>Permissions</legend>' + checkboxes+ '</fieldset>';
 
 			return swal({
 				title: t('Upload_file_question'),
@@ -138,13 +153,24 @@ fileUpload = function(filesToUpload) {
 				if (isConfirm !== true) {
 					return;
 				}
-
+				
+				var checkboxes = document.getElementsByName('fileusers[]');
+				var fileUsers = [];
+				for (var i=0, n=checkboxes.length;i<n;i++) 
+				{
+					if (checkboxes[i].checked) 
+					{
+						fileUsers.push(checkboxes[i].value);
+					}
+				}
+				
 				const record = {
 					name: document.getElementById('file-name').value || file.name || file.file.name,
 					size: file.file.size,
 					type: file.file.type,
 					rid: roomId,
-					description: document.getElementById('file-description').value
+					description: document.getElementById('file-description').value,
+					fileUsers: fileUsers
 				};
 
 				const upload = fileUploadHandler('Uploads', record, file.file);
@@ -193,7 +219,7 @@ fileUpload = function(filesToUpload) {
 
 
 					if (file) {
-						Meteor.call('sendFileMessage', roomId, storage, file, () => {
+						Meteor.call('sendFileMessage', roomId, storage, file, fileUsers, () => {
 							Meteor.setTimeout(() => {
 								const uploading = Session.get('uploading');
 								if (uploading !== null) {
@@ -235,6 +261,11 @@ fileUpload = function(filesToUpload) {
 			});
 		});
 	}
-
-	consume();
+	var rusers = undefined;
+		
+	Meteor.call('getUsersOfRoom', roomId, true, (error, users) => {
+			rusers =  users;		
+			consume();
+		}
+	);	
 };

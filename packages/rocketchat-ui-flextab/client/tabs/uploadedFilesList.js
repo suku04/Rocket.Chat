@@ -3,11 +3,12 @@ const roomFiles = new Mongo.Collection('room_files');
 
 Template.uploadedFilesList.helpers({
 	files() {
-		return roomFiles.find({ rid: this.rid }, { sort: { uploadedAt: -1 } });
+		//return roomFiles.find({ rid: this.rid }, { sort: { uploadedAt: -1 } });
+		return roomFiles.find({ rid: this.rid, $or:[{userId:Meteor.userId()}, {fileUsers: {$in:[Meteor.userId()]}}]}, {}, { sort: { uploadedAt: -1 } });
 	},
 
 	hasFiles() {
-		return roomFiles.find({ rid: this.rid }).count() > 0;
+		return roomFiles.find({ rid: this.rid, $or:[{userId:Meteor.userId()}, {fileUsers: {$in:[Meteor.userId()]}}] }).count() > 0;
 	},
 
 	hasMore() {

@@ -204,6 +204,21 @@ Template.message.helpers({
 		}
 		return true;
 	},
+	hasAttachmentPermission(){
+		const curUserId = Meteor.userId();	
+		if (this.u._id === curUserId) {
+				return true;
+		}
+		if(!this.fileUsers){
+			return true;
+		}else{
+			if(this.fileUsers.indexOf(curUserId) < 0){
+				return false;
+			}
+		}
+		
+		return true;
+	},
 	reactions() {
 		const userUsername = Meteor.user().username;
 		return Object.keys(this.reactions||{}).map(emoji => {
@@ -297,6 +312,7 @@ Template.message.onCreated(function() {
 		if (isSystemMessage) {
 			msg.html = RocketChat.Markdown.parse(msg.html);
 		}
+		
 		return msg;
 	})();
 });

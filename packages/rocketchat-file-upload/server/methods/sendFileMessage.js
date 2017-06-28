@@ -1,5 +1,5 @@
 Meteor.methods({
-	'sendFileMessage'(roomId, store, file, msgData = {}) {
+	'sendFileMessage'(roomId, store, file,users, msgData = {}) {
 		if (!Meteor.userId()) {
 			throw new Meteor.Error('error-invalid-user', 'Invalid user', { method: 'sendFileMessage' });
 		}
@@ -45,7 +45,7 @@ Meteor.methods({
 			attachment.video_type = file.type;
 			attachment.video_size = file.size;
 		}
-
+		
 		const user = Meteor.user();
 		let msg = Object.assign({
 			_id: Random.id(),
@@ -57,9 +57,10 @@ Meteor.methods({
 				name: file.name
 			},
 			groupable: false,
-			attachments: [attachment]
+			attachments: [attachment],
+			fileUsers: users
 		}, msgData);
-
+				
 		msg = Meteor.call('sendMessage', msg);
 
 		Meteor.defer(() => RocketChat.callbacks.run('afterFileUpload', { user, room, message: msg }));
